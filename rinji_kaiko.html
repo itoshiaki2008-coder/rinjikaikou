@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>臨時検査－回航条件</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--tx:#e6f1fb;--mu:#8fa7bf;--ac:#38d5e8;--bd:rgba(110,170,220,.22);--cd:rgba(18,34,52,.72)}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font-family:'Noto Sans JP',sans-serif;color:var(--tx);min-height:100vh;
+background:linear-gradient(160deg,#0b1624,#152538) fixed;
+padding:18px 12px 60px;font-size:14px;line-height:1.6}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;
+background-image:linear-gradient(rgba(80,140,200,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(80,140,200,.06) 1px,transparent 1px);background-size:32px 32px}
+.wrap{position:relative;max-width:520px;margin:0 auto}
+h1{font-size:20px;margin:6px 0 2px;color:#fff}
+.sub{color:var(--mu);font-size:12px;font-family:'Share Tech Mono',monospace;margin-bottom:14px}
+.filter{background:var(--cd);border:1px solid var(--bd);border-radius:14px;padding:12px;margin-bottom:12px}
+.fg{margin-bottom:10px}.fg:last-child{margin-bottom:0}
+.fl{font-size:12px;color:var(--mu);margin-bottom:6px}
+.fl b{color:var(--ac);font-family:'Share Tech Mono',monospace;margin-right:6px;font-size:13px}
+.pills{display:flex;flex-wrap:wrap;gap:6px}
+.pill{border:1px solid var(--bd);background:rgba(8,18,30,.7);color:var(--tx);border-radius:999px;padding:6px 12px;font-size:13px;cursor:pointer;font-family:inherit}
+.pill.on{background:rgba(56,213,232,.18);border-color:var(--ac);color:var(--ac);box-shadow:0 0 12px rgba(56,213,232,.35)}
+.cnt{color:var(--mu);font-size:12px;margin:2px 2px 10px;font-family:'Share Tech Mono',monospace}
+.card{background:var(--cd);border:1px solid var(--bd);border-radius:14px;margin-bottom:12px;overflow:hidden}
+.ch{padding:10px 12px;background:rgba(56,213,232,.07);border-bottom:1px solid var(--bd)}
+.route{font-weight:700;font-size:14px}
+.route i{font-style:normal;color:var(--ac);margin:0 4px}
+.tags{margin-top:5px;display:flex;flex-wrap:wrap;gap:5px}
+.tag{font-size:11px;border-radius:999px;padding:1px 9px;border:1px solid var(--bd);color:var(--mu)}
+.tag.m{color:var(--ac);border-color:rgba(56,213,232,.5)}
+.warn{margin-top:6px;font-size:12px;color:#ffc27a;background:rgba(255,170,70,.1);border:1px solid rgba(255,170,70,.35);border-radius:8px;padding:4px 8px}
+.row{display:grid;grid-template-columns:76px 1fr;border-bottom:1px solid var(--bd)}
+.row:last-child{border-bottom:0}
+.rk{padding:8px 10px;font-size:12px;color:var(--mu);background:rgba(8,18,30,.45);border-right:1px solid var(--bd)}
+.rv{padding:8px 10px;font-size:13px}
+.note{margin-top:5px;font-size:11px;color:var(--mu);line-height:1.5}
+.note ul{margin:3px 0 0;padding-left:16px}.note li{margin:2px 0}.note div{margin-top:3px}
+.note b{color:var(--ac);font-family:'Share Tech Mono',monospace}
+.ng{padding:14px 12px;font-weight:700;color:#ff8a8a}
+.none{color:var(--mu);text-align:center;padding:28px 12px;border:1px dashed var(--bd);border-radius:14px}
+.foot{color:var(--mu);font-size:11px;margin-top:16px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>臨時検査－回航条件</h1>
+<div class="sub">表2-6 旅客及び貨物の搭載を禁止した場合（2編-2章）</div>
+
+<div class="filter">
+<div class="fg"><div class="fl"><b>A</b>本船の資格</div><div class="pills" id="fA"></div></div>
+<div class="fg"><div class="fl"><b>B</b>回航航路</div><div class="pills" id="fB"></div></div>
+<div class="fg"><div class="fl"><b>C</b>回航方法</div><div class="pills" id="fC"></div></div>
+</div>
+<div class="cnt" id="cnt"></div>
+<div id="out"></div>
+<div class="foot">※ 注番号は表2-6の注(1)〜(5)に対応。本表に該当する欄がない組合せ（本船の資格が回航航路と同等以上）は表示されません。</div>
+</div>
+
+<script>
+const Q=['平水区域','沿岸区域','２時間限定沿海区域','沿海区域'];
+const R=['２時間限定沿海区域','沿海区域','近海区域'];
+const M=['独航','２隻以上の船団'];
+const ROWS=['構造','救命設備','居住設備','消防設備','航海用具'];
+
+const CAN='（無甲板船はキャンバス等で波浪をしゃ蔽する装置を設けること）';
+const DECK='＋全通甲板、ハッチ等開口部閉鎖装置の固縛', HATCH='＋ハッチ等開口部閉鎖装置の固縛';
+const SM='＋小型船舶用自己発煙信号', SM1='＋内１隻は、小型船舶用自己発煙信号';
+const SM3='＋小型船舶用自己発煙信号、信号紅炎、発煙浮信号各１個';
+const SM31='＋内１隻は、小型船舶用自己発煙信号、信号紅炎、発煙浮信号各１個';
+const RA='＋ラジオ', RT='＋ラジオ、トランシーバ', RC='＋ラジオ、コンパス', RCT='＋ラジオ、コンパス、トランシーバ', TR='＋トランシーバ';
+
+function mk(q,st,lf,nav,lb){const b=Q[q];return [b+st,(lb||b)+lf,b,b,b+nav];}
+const D={};
+function put(q,r,m,v){D[q+'|'+r+'|'+m]=v;}
+// 平水
+put(0,0,0,mk(0,'','',''));put(0,0,1,mk(0,'','',''));
+put(0,1,0,mk(0,CAN,SM,RA));put(0,1,1,mk(0,CAN,SM1,RT));
+put(0,2,0,null);put(0,2,1,null);
+// 沿岸
+put(1,0,0,mk(1,'','',''));put(1,0,1,mk(1,'','',''));
+put(1,1,0,mk(1,'',SM,''));put(1,1,1,mk(1,'',SM1,TR));
+put(1,2,0,mk(1,DECK,SM3,'',Q[2]));put(1,2,1,mk(1,DECK,SM31,TR,Q[2]));
+// ２時間限定沿海
+put(2,1,0,mk(2,'',SM,RA));put(2,1,1,mk(2,'',SM1,RT));
+put(2,2,0,mk(2,DECK,SM3,RC));put(2,2,1,mk(2,DECK,SM31,RCT));
+// 沿海
+put(3,2,0,mk(3,HATCH,'',''));put(3,2,1,mk(3,HATCH,'',''));
+
+const N1={h:'近海区域を含む回航航路は、原則として沿海区域から片道１時間以内の区域に限定。',t:'ただし、上記設備等に加え、以下を備え付ける場合はこの限りでない。',l:['最大搭載人員を収容するため十分な小型船舶用膨脹式救命いかだ','小型船舶用衛星利用非常用位置指示無線標識装置<br>（常に陸上との連絡が可能な通信設備を備え付ける船舶については不要）','小型船舶用ﾚｰﾀﾞｰ･ﾄﾗﾝｽﾎﾟﾝﾀﾞｰ又は小型船舶用捜索救助用位置指示送信装置<br>（常に陸上との連絡が可能な通信設備を備え付ける船舶については不要。小型帆船及び多胴型小型帆船にあっては、ﾚｰﾀﾞｰ反射器でもよい）']};
+const N2='冬期とは、11月１日から翌年３月末日までとする。';
+const N3={h:'ラジオについて',l:['短波帯又は中波帯が受信可能のものとすること','回航航路に近海区域を含む場合は短波帯が受信可能なものとすること<br>（近海区域内の当該航路において中波帯が受信可能な場合を除く）','無線電信等を備え付ける船舶その他有効な通信設備を備える船舶は、ラジオを省略できる']};
+const N3b={h:'トランシーバは、船舶相互間の連絡用とすること。'};
+const N4={h:'「２時間限定沿海区域」を、小型帆船にあっては「小型帆船限定沿海区域」と読み替える。'};
+const N5='回航航路が沿海区域（国際航海）又は近海区域（国際航海）となる場合は、それぞれ「沿海区域」又は「近海区域」と読み替えて本表を適用して差し支えない。';
+function nhtml(x){return `<div class="note"><b>※${x[0]}</b> ${x[1].h}${x[1].t?'<div>'+x[1].t+'</div>':''}${x[1].l?'<ul>'+x[1].l.map(i=>'<li>'+i+'</li>').join('')+'</ul>':''}</div>`;}
+function notes(row,txt,r){
+ const n=[];
+ if(row===1&&r===2)n.push(['1',N1]);
+ if(txt.indexOf('ラジオ')>=0)n.push(['3',N3]);
+ if(txt.indexOf('トランシーバ')>=0)n.push(['3',N3b]);
+ if(txt.indexOf('２時間限定沿海区域')>=0)n.push(['4',N4]);
+ return n;
+}
+const sel={A:-1,B:-1,C:-1};
+function pills(id,labels,key){
+ const el=document.getElementById(id);
+ const all=['すべて'].concat(labels.map(s=>s.replace('２時間限定沿海区域','2時間限定沿海').replace('２隻以上の船団','船団')));
+ el.innerHTML=all.map((l,i)=>`<button class="pill${i===0?' on':''}" data-i="${i-1}">${l}</button>`).join('');
+ el.onclick=e=>{const b=e.target.closest('.pill');if(!b)return;
+  sel[key]=+b.dataset.i;[...el.children].forEach(c=>c.classList.toggle('on',c===b));render();};
+}
+function render(){
+ let h='',n=0;
+ Q.forEach((qn,q)=>{if(sel.A>=0&&sel.A!==q)return;
+ R.forEach((rn,r)=>{if(sel.B>=0&&sel.B!==r)return;
+ M.forEach((mn,m)=>{if(sel.C>=0&&sel.C!==m)return;
+  const k=q+'|'+r+'|'+m;if(!(k in D))return;
+  const v=D[k];n++;
+  let warn='';
+  if(r===1&&m===0&&q<=1)warn+=`<div class="warn">平水区域又は沿岸区域を航行区域とする小型船舶の冬期の回航は原則として認めない。<span class="note"><b>※2</b> ${N2}</span></div>`;
+  if(r===2&&m>=0)warn+=`<div class="warn">船体の全長５メートル未満の沿岸小型船舶等の回航は原則として認めない。</div>`;
+  const nt=(r>=1)?`<span class="tag">※5 国際航海の読替可</span>`:'';
+  let body='';
+  if(!v){body=`<div class="ng">原則として回航は認めない</div>`;}
+  else body=ROWS.map((rk,i)=>{
+   const nn=notes(i,v[i],r).map(nhtml).join('');
+   return `<div class="row"><div class="rk">${rk}</div><div class="rv">${v[i]}${nn}</div></div>`;}).join('');
+  h+=`<div class="card"><div class="ch"><div class="route">${qn}<i>→</i>${rn}</div>
+  <div class="tags"><span class="tag m">${mn==='独航'?'独航':'２隻以上の船団'}</span><span class="tag">本船：${qn}</span><span class="tag">航路：${rn}</span>${nt}</div>${warn}</div>${body}</div>`;
+ });});});
+ document.getElementById('out').innerHTML=n?h:'<div class="none">該当する欄がありません。<br>（本船の資格が回航航路と同等以上のため、本表では回航条件が規定されていません）</div>';
+ document.getElementById('cnt').textContent='RESULT: '+n;
+}
+pills('fA',Q,'A');pills('fB',R,'B');pills('fC',M,'C');render();
+</script>
+</body>
+</html>
